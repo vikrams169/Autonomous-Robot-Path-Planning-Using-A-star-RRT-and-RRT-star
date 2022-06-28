@@ -4,9 +4,13 @@ import random
 import tkinter as tk
 from tkinter.messagebox import *
 
-NUM_ROWS = 100, NUM_COLUMNS= 100, WINDOW_LENGTH = 500, WINDOW_BREADTH = 500 OBSTACLE_PROB = 0.3
-pygame.display.set_caption('A* Path Finding Algorithm Visualization')
-viz_window = pygame.display.set_mode((NUM_ROWS,NUM_COLUMNS))
+NUM_ROWS = 100
+NUM_COLUMNS = 100
+WINDOW_LENGTH = 1000
+WINDOW_BREADTH = 1000
+WIDTH_X = WINDOW_LENGTH/NUM_ROWS
+WIDTH_Y = WINDOW_BREADTH/NUM_COLUMNS 
+OBSTACLE_PROB = 0.3
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
@@ -16,7 +20,8 @@ BLUE = (0,0,255)
 ORANGE = (255,164.5,0)
 GREY = (127.5,127.5,127.5)
 
-WIDTH_X = WINDOOW_LENGTH/NUM_ROWS, WIDTH_Y = WINDOW_BREADTH/NUM_COLUMNS 
+pygame.display.set_caption('A* Path Finding Algorithm Visualization')
+viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
 
 class Node:
 
@@ -24,7 +29,7 @@ class Node:
 		self.row = row
 		self.column = column
 		self.g_cost = 0
-		self.j_cost = 0
+		self.h_cost = 0
 		self.f_cost = 0
 		self.parent = None
 		self.start_node = False
@@ -44,24 +49,24 @@ class Node:
 		if (self.colour == GREEN and self.f_cost >= new_f_cost) or self.colour == WHITE:
 			self.g_cost = parent.g_cost + math.sqrt((self.row-parent.row)**2+(self.column-parent.column)**2)
 			self.f_cost = self.g_cost + self.h_cost
-			self.parent = new_parent
+			self.parent = parent
 			self.colour = GREEN
 
-	def update_neighbours(self,env,open_nodes_set):
+	def update_neighbours(self,env):
 		if self.row > 0:
-			self.update_node_if_needed(env[self.row-1][self.column],self)
+			env[self.row-1][self.column].update_node_if_needed(self)
 			if self.column > 0:
-				self.update_node_if_needed(env[self.row][self.column-1],self)
-				self.update_node_if_needed(env[self.row-1][self.column-1],self)
+				env[self.row][self.column-1].update_node_if_needed(self)
+				env[self.row-1][self.column-1].update_node_if_needed(self)
 			if self.column < NUM_COLUMNS-1:
-				self.update_node_if_needed(env[self.row][self.column+1],self)
-				self.update_node_if_needed(env[self.row-1][self.column+1],self)
+				env[self.row][self.column+1].update_node_if_needed(self)
+				env[self.row-1][self.column+1].update_node_if_needed(self)
 		if self.row < NUM_ROWS-1:
-			self.update_node_if_needed(env[self.row+1][self.column],self)
+			env[self.row+1][self.column].update_node_if_needed(self)
 			if self.column > 0:
-				self.update_node_if_needed(env[self.row+1][self.column-1],self)
+				env[self.row+1][self.column-1].update_node_if_needed(self)
 			if self.column < NUM_COLUMNS-1:
-				self.update_node_if_needed(env[self.row+1][self.column+1],self)
+				env[self.row+1][self.column+1].update_node_if_needed(self)
 
 	def visualize_node(self):
 		colour = self.colour
@@ -70,13 +75,16 @@ class Node:
 		pygame.draw.rect(viz_window,colour,(self.row*WIDTH_X,self.column*WIDTH_Y,WIDTH_X,WIDTH_Y))
 
 def set_env_h_costs(env,target_node):
-	x = target_node.row, y = target_node.column
-	for row in NUM_ROWS:
-		for column in NUM_COLUMNS:
+	x = target_node.row
+	y = target_node.column
+	for row in range(NUM_ROWS):
+		for column in range(NUM_COLUMNS):
 			env[row][column].set_h_cost((x,y))
 
 def optimal_node(env):
-	lowest_f_cost = 1e7, lowest_h_cost = 1e7, optimal_node = None
+	lowest_f_cost = 1e7
+	lowest_h_cost = 1e7
+	optimal_node = None
 	for i in range(len(env)):
 		for j in range(len(env[0])):
 			if env[i][j].colour == GREEN and (env[i][j].f_cost < lowest_f_cost or (env[i][j].f_cost == lowest_f_cost and env[i][j].h_cost < lowest_h_cost)):
@@ -91,28 +99,32 @@ def initialize_env():
 		env.append([])
 		for j in range(NUM_COLUMNS):
 			env[-1].append(Node(i,j))
+	return env
 
 def visualize_env_window(viz_window,env):
 	viz_window.fill(WHITE)
 	for row in range(NUM_ROWS):
 		for column in range(NUM_COLUMNS):
 			env[row][column].visualize_node()
-	for row in range(NUM_ROWS):
-		pygame.draw.line(viz_window,GREY,(0,row*WIDTH_X),(WIDTH_X,row*WIDTH_X))
-		pygame.draw.line(viz_window,GREY,(row*WIDTH_Y,0),(row*WIDTH_Y,WIDTH_Y))
 	pygame.display.update()
 
 def identify_user_clicked_node(coord,env):
-	return env[coord[0]//WIDTH_X][coord[1]//WIDTH_Y]
+	return env[int(coord[0]//WIDTH_X)][int(coord[1]//WIDTH_Y)]
+
+def trace_a_star_path(start_node,target_node):
+	current_node = target_node
+	while current_node is not start_node:
+		current_node.colour = BLUE
+		current_node = current_node.parent
+	current_node.colour = BLUE
 
 def a_star_algorithm(viz_window,env,start_node,target_node):
 	num_iterations = 0
-	env = initialize_env()
 	found_target = False
 	start_node.colour = GREEN
 	while optimal_node(env) is not None:
 		for event in pygame.event.get():
-			if event.type = pygame.QUIT:
+			if event.type == pygame.QUIT:
 				pygame.quit()
 		current_node = optimal_node(env)
 		if current_node == target_node:
@@ -122,21 +134,16 @@ def a_star_algorithm(viz_window,env,start_node,target_node):
 			break
 		current_node.colour = RED
 		current_node.update_neighbours(env)
+		num_iterations += 1
 		visualize_env_window(viz_window,env)
-
-def trace_a_star_path(start_node,target_node):
-	current_node = target
-	while current_node is not source:
-		current_node.colour = BLUE
-		current_node = current_node.parent
-	current_node.colour = BLUE
 
 env = initialize_env()
 execute = True
-start_node = None, target_node = None
+start_node = None
+target_node = None
 
 while execute:
-	visualize_env_window(env)
+	visualize_env_window(viz_window,env)
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			execute = False
@@ -151,13 +158,13 @@ while execute:
 				target_node = node
 				set_env_h_costs(env,target_node)
 				node.visualize_node()
-			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_SPACE and start_node and target_node:
-					a_star_algorithm(env,start_node,target_node)
-				if event.key == pygame.K_c:
-					start_node = None
-					target_node = None
-					env = initialize_env()
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_SPACE and start_node and target_node:
+				a_star_algorithm(viz_window,env,start_node,target_node)
+			if event.key == pygame.K_c:
+				start_node = None
+				target_node = None
+				env = initialize_env()
 
 
 
