@@ -24,10 +24,6 @@ RED = (255,0,0)
 BLUE = (0,0,255)
 ORANGE = (255,164.5,0)
 
-# Initializing the grid world as a pygame display window
-pygame.display.set_caption('A* Path Finding Algorithm Visualization')
-viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
-
 # A class to define the characteristics of each grid cell (generalized to each discrete data point in a robotic configuration space)
 class Node:
 
@@ -153,6 +149,10 @@ def a_star_algorithm(viz_window,env,start_node,target_node):
 		current_node.update_neighbours(env)
 		num_iterations += 1
 		visualize_env_window(viz_window,env)
+
+# Initializing the grid world as a pygame display window
+pygame.display.set_caption('A* Path Finding Algorithm Visualization')
+viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
 
 # Initializing the environment/grid world, and setting conditions/breaks
 env = initialize_env()
