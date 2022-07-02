@@ -7,8 +7,9 @@ WINDOW_BREADTH = 1000					# Length of the grid world along the Y-axis
 NODE_RADIUS = 3							# Radius of the circle displayed for each node
 GOAL_RADIUS = 10						# Radius of goal reachability to ensure the algorithm has finished
 EPSILON = 15							# Determines how far to place each node from its parent
+REWIRING_RADIUS = 50   					# Radius to search for nodes to rewire/compare cost
 
-# Defining different map types (based on obstacles) to perform RRT on
+# Defining different map types (based on obstacles) to perform RRT* on
 OBSTACLES = [{"rectangles":[(300,300,150,600),(700,500,250,100)],"circles":[(850,150,100)]},{"rectangles":[(700,50,50,900)],"circles":[(350,650,200),(900,300,50)]}]
 MAP_TYPE = 0
 
@@ -27,8 +28,12 @@ class Node:
 		self.x = coord[0]
 		self.y = coord[1]
 		self.parent = None
+		self.children = []
+		self.cost =  1e7
 		self.start_node = start_node
 		self.target_node = target_node
+		if self.start_node:
+			self.cost = 0
 
 	# Colouring a node for visualization processes in pygame
 	def visualize_node(self,viz_window):
@@ -60,6 +65,39 @@ def obstacle_collision(point,obstacle_list):
 			return True
 	return False
 
+# Recursively updating the costs of all the child nodes when a parent node gets rewired
+def update_children(node):
+	for child_node in node.children:
+		child_node.cost = node.cost + math.sqrt((child_node.x-node.x)**2 + (child_node.y-node.y)**2)
+		update_children(child_node)
+
+# Finding the proximal parent node (as opposed to the closest node in RRT)
+def find_proximal_node(new_node,node_list):
+	proximal_node = None
+	for node in node_list:
+		dist = math.sqrt((new_node.x-node.x)**2 + (new_node.y-node.y)**2)
+		if dist < REWIRING_RADIUS:
+			if node.cost + dist < new_node.cost:
+				proximal_node = node
+				new_node.cost = node.cost + dist
+				new_node.parent = proximal_node
+	if proximal_node is None:
+		return new_node, False
+	else:
+		proximal_node.children.append(new_node)
+		return new_node, True
+
+# Rewiring the nodes in the vicinity of the newly added node
+def rewire_nodes(new_node,node_list):
+	for node in node_list:
+		dist = math.sqrt((new_node.x-node.x)**2 + (new_node.y-node.y)**2)
+		if dist < REWIRING_RADIUS:
+			if new_node.cost + dist < node.cost:
+				node.cost = new_node.cost + dist
+				node.parent = new_node
+				update_children(node)
+				new_node.children.append(node)
+
 # Adding a new node while making sure it doesn't collide with any obstacles
 def add_new_node(viz_window,node_list,obstacle_list):
 	while True:
@@ -75,8 +113,12 @@ def add_new_node(viz_window,node_list,obstacle_list):
 		new_pos = (nearest_node.x+EPSILON*math.cos(theta),nearest_node.y+EPSILON*math.sin(theta))
 		if not obstacle_collision(new_pos,obstacle_list):
 			new_node = Node(new_pos,False,False)
-			new_node.parent = nearest_node
+			new_node, success = find_proximal_node(new_node,node_list)
+			if not success:
+				new_node.parent = nearest_node
+				nearest_node.children.append(new_node)
 			node_list.append(new_node)
+			rewire_nodes(new_node,node_list)
 			new_node.visualize_node(viz_window)
 			pygame.draw.line(viz_window,BLUE,(new_node.x,new_node.y),(new_node.parent.x,new_node.parent.y))
 			return new_node,node_list
@@ -95,7 +137,7 @@ def display_final_path(viz_window,goal_node):
 		current_node = current_node.parent
 	pygame.display.update()
 
-# The RRT Algorithm
+# The RRT* Algorithm
 def rrt_algorithm(viz_window,start_node,goal_node,obstacle_list):
 	node_list = []
 	node_list.append(start_node)
@@ -105,11 +147,10 @@ def rrt_algorithm(viz_window,start_node,goal_node,obstacle_list):
 			goal_node.parent = new_node
 			pygame.draw.line(viz_window,BLUE,(new_node.x,new_node.y),(new_node.parent.x,new_node.parent.y))
 			node_list.append(goal_node)
-			break
-	display_final_path(viz_window,goal_node)
+			display_final_path(viz_window,goal_node)
 
 # Initializing the grid world as a pygame display window,
-pygame.display.set_caption('RRT Path Finding Algorithm Visualization')
+pygame.display.set_caption('RRT* Path Finding Algorithm Visualization')
 viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
 viz_window.fill(WHITE)
 pygame.display.update()
