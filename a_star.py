@@ -80,27 +80,6 @@ class Node:
 			colour = ORANGE
 		pygame.draw.rect(viz_window,colour,(self.row*WIDTH_X,self.column*WIDTH_Y,WIDTH_X,WIDTH_Y))
 
-# Setting the initial h costs for all the cells in the grid
-def set_env_h_costs(env,target_node):
-	x = target_node.row
-	y = target_node.column
-	for row in range(NUM_ROWS):
-		for column in range(NUM_COLUMNS):
-			env[row][column].set_h_cost((x,y))
-
-# Returning the node with lowest f cost (and lowest h cost in case of multiple such nodes) from the open set (of green colour)
-def optimal_node(env):
-	lowest_f_cost = 1e7
-	lowest_h_cost = 1e7
-	optimal_node = None
-	for i in range(len(env)):
-		for j in range(len(env[0])):
-			if env[i][j].colour == GREEN and (env[i][j].f_cost < lowest_f_cost or (env[i][j].f_cost == lowest_f_cost and env[i][j].h_cost < lowest_h_cost)):
-				optimal_node = env[i][j]
-				lowest_f_cost = optimal_node.f_cost
-				lowest_h_cost = optimal_node.h_cost
-	return optimal_node
-
 # Initializing the environment/grid world
 def initialize_env():
 	env = []
@@ -121,6 +100,27 @@ def visualize_env_window(viz_window,env):
 # Identifying the node/grid cell that the user clicks on (as either the source or target)
 def identify_user_clicked_node(coord,env):
 	return env[int(coord[0]//WIDTH_X)][int(coord[1]//WIDTH_Y)]
+
+# Setting the initial h costs for all the cells in the grid
+def set_env_h_costs(env,target_node):
+	x = target_node.row
+	y = target_node.column
+	for row in range(NUM_ROWS):
+		for column in range(NUM_COLUMNS):
+			env[row][column].set_h_cost((x,y))
+
+# Returning the node with lowest f cost (and lowest h cost in case of multiple such nodes) from the open set (of green colour)
+def optimal_node(env):
+	lowest_f_cost = 1e7
+	lowest_h_cost = 1e7
+	optimal_node = None
+	for i in range(len(env)):
+		for j in range(len(env[0])):
+			if env[i][j].colour == GREEN and (env[i][j].f_cost < lowest_f_cost or (env[i][j].f_cost == lowest_f_cost and env[i][j].h_cost < lowest_h_cost)):
+				optimal_node = env[i][j]
+				lowest_f_cost = optimal_node.f_cost
+				lowest_h_cost = optimal_node.h_cost
+	return optimal_node
 
 # Tracing the final shortest and optimal path in blue after A* completes running
 def trace_a_star_path(start_node,target_node):

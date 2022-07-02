@@ -4,12 +4,13 @@ import random
 
 WINDOW_LENGTH = 1000					# Length of the grid world along the X-axis
 WINDOW_BREADTH = 1000					# Length of the grid world along the Y-axis
-NODE_RADIUS = 3
-GOAL_RADIUS = 10
-EPSILON = 15
+NODE_RADIUS = 3							# Radius of the circle displayed for each node
+GOAL_RADIUS = 10						# Radius of goal reachability to ensure the algorithm has finished
+EPSILON = 15							# Determines how far to place each node from its parent
 
-OBSTACLES = [{"rectangles":[(300,300,150,600),(700,500,250,100)],"circles":[(850,150,100)]},{"rectangles":[(700,150,100,900)],"circles":[(350,650,200),(900,300,50)]}]
-MAP_TYPE = 0
+# Defining different map types (based on obstacles) to perform RRT on
+OBSTACLES = [{"rectangles":[(300,300,150,600),(700,500,250,100)],"circles":[(850,150,100)]},{"rectangles":[(700,50,50,900)],"circles":[(350,650,200),(900,300,50)]}]
+MAP_TYPE = 1
 
 # Defining colour values across the RGB Scale
 WHITE = (255,255,255)
@@ -19,12 +20,7 @@ RED = (255,0,0)
 BLUE = (0,0,255)
 ORANGE = (255,164.5,0)
 
-# Initializing the grid world as a pygame display window,
-pygame.display.set_caption('RRT Path Finding Algorithm Visualization')
-viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
-viz_window.fill(WHITE)
-pygame.display.update()
-
+# A class to define the characteristics of each grid cell (generalized to each discrete data point in a robotic configuration space)
 class Node:
 
 	def __init__(self,coord,start_node=False,target_node=False):
@@ -34,6 +30,7 @@ class Node:
 		self.start_node = start_node
 		self.target_node = target_node
 
+	# Colouring a node for visualization processes in pygame
 	def visualize_node(self,viz_window):
 		colour = RED
 		if self.start_node or self.target_node:
@@ -41,11 +38,19 @@ class Node:
 		pygame.draw.circle(viz_window,colour,(self.x,self.y),NODE_RADIUS,width=0)
 		pygame.display.update()
 
-def target_reached(node,goal):
-	if math.sqrt((node.x-goal.x)**2 + (node.y-goal.y)**2) < GOAL_RADIUS:
-		return True
-	return False
+# Initializing obstacles on the map
+def initialize_obstacles(viz_window):
+	obstacle_list = {"rectangles":[],"circles":[]}
+	for rect in OBSTACLES[int(MAP_TYPE)]["rectangles"]:
+		obstacle_list["rectangles"].append(pygame.Rect(rect)) 
+		pygame.draw.rect(viz_window,BLACK,pygame.Rect(rect))
+	for circle in OBSTACLES[int(MAP_TYPE)]["circles"]:
+		obstacle_list["circles"].append(circle)
+		pygame.draw.circle(viz_window,BLACK,(circle[0],circle[1]),circle[2],width=0)
+	pygame.display.update()
+	return obstacle_list
 
+# Checking if the new point generated collides with any obstacles in the environment
 def obstacle_collision(point,obstacle_list):
 	for rect in obstacle_list["rectangles"]:
 		if rect.collidepoint(point):
@@ -55,6 +60,7 @@ def obstacle_collision(point,obstacle_list):
 			return True
 	return False
 
+# Adding a new node while making sure it doesn't collide with any obstacles
 def add_new_node(viz_window,node_list,obstacle_list):
 	while True:
 		point = (random.random()*WINDOW_LENGTH,random.random()*WINDOW_BREADTH)
@@ -75,17 +81,13 @@ def add_new_node(viz_window,node_list,obstacle_list):
 			pygame.draw.line(viz_window,BLUE,(new_node.x,new_node.y),(new_node.parent.x,new_node.parent.y))
 			return new_node,node_list
 
-def initialize_obstacles(viz_window):
-	obstacle_list = {"rectangles":[],"circles":[]}
-	for rect in OBSTACLES[int(MAP_TYPE)]["rectangles"]:
-		obstacle_list["rectangles"].append(pygame.Rect(rect)) 
-		pygame.draw.rect(viz_window,BLACK,pygame.Rect(rect))
-	for circle in OBSTACLES[int(MAP_TYPE)]["circles"]:
-		obstacle_list["circles"].append(circle)
-		pygame.draw.circle(viz_window,BLACK,(circle[0],circle[1]),circle[2],width=0)
-	pygame.display.update()
-	return obstacle_list
+# Checking if the latest node added falls within the goal circle (thus completing the search)
+def target_reached(node,goal):
+	if math.sqrt((node.x-goal.x)**2 + (node.y-goal.y)**2) < GOAL_RADIUS:
+		return True
+	return False
 
+# Highliting the final RRT path from starting to target node
 def display_final_path(viz_window,goal_node):
 	current_node = goal_node
 	while not current_node.start_node:
@@ -93,6 +95,7 @@ def display_final_path(viz_window,goal_node):
 		current_node = current_node.parent
 	pygame.display.update()
 
+# The RRT Algorithm
 def rrt_algorithm(viz_window,start_node,goal_node,obstacle_list):
 	node_list = []
 	node_list.append(start_node)
@@ -105,6 +108,13 @@ def rrt_algorithm(viz_window,start_node,goal_node,obstacle_list):
 			break
 	display_final_path(viz_window,goal_node)
 
+# Initializing the grid world as a pygame display window,
+pygame.display.set_caption('RRT Path Finding Algorithm Visualization')
+viz_window = pygame.display.set_mode((WINDOW_LENGTH,WINDOW_BREADTH))
+viz_window.fill(WHITE)
+pygame.display.update()
+
+# Running RRT till completion
 execute = True
 start_pos, target_pos = None, None
 start_node_found, target_node_found = False, False
@@ -132,14 +142,3 @@ while execute:
 			if event.key == pygame.K_c:
 				start_node = None
 				goal_node_node = None
-
-
-
-
-
-
-
-
-
-
-
