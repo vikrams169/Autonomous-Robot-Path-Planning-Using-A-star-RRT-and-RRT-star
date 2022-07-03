@@ -67,4 +67,6 @@ Note that when running the RRT* code, you can change the map being used by chang
 <li>RRT searches a majority of the entire world pretty fast, but struggles to quickly reach within the goal radius to complete running. A compbination of RRT with a heuristic/estimate of where the goal could be could attempt to solve this issue.
 <li>RRT* produces much straighter paths (and thus eventually more optimal) than RRT. However, it takes longer to run because of steps like the rewiring of nodes.
 </ul>
+<b>A Point to Note: </b>The obstacles drawn on the map are presented already taking into account a certain offset so that trajectries don't stick too close to the actual obstacles. So in the RRT & RRT* Visualizations where nodes get extremely close to obstacles or lines connecting nodes slightly cut through 'visible' obstacle corners, note that they are permissible considering that this program developed (and most other systems making use of such algorithms) already preconsider bloated/larger-than-actual obstacles.
+<br><br>
 A big shoutout to informative sources like <a href="https://github.com/saif191020/Astar-Pathfinding-Visualizer">this</a> and <a href="https://github.com/pbpf/RRT-2">this</a> which give a valuable insight on how to use pygame for visualization and animation.
