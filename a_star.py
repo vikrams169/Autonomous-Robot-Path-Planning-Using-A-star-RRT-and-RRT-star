@@ -6,6 +6,10 @@ import pygame
 import math
 import random
 
+# Information for saving the animation frames
+dir_name = "a_star_frames"
+frame_number = 0
+
 # Initializing variables defining the grid world
 # Can be varied as per convenience and grid world specifications
 NUM_ROWS = 100							# Number of rows in the grid world
@@ -91,11 +95,14 @@ def initialize_env():
 
 # A function to update the displayed grid world after each iteration of the A* Algorithm
 def visualize_env_window(viz_window,env):
+	global frame_number
 	viz_window.fill(WHITE)
 	for row in range(NUM_ROWS):
 		for column in range(NUM_COLUMNS):
 			env[row][column].visualize_node()
 	pygame.display.update()
+	pygame.image.save(viz_window,dir_name+"/frame"+str(frame_number)+".jpg")
+	frame_number += 1
 
 # Identifying the node/grid cell that the user clicks on (as either the source or target)
 def identify_user_clicked_node(coord,env):

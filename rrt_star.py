@@ -1,17 +1,29 @@
+# Demonstration and Visualization of the A* Algorithm a 2D Grid World
+# Compatible with Python 3.8.1 and pygame 2.1.2import pygame
+
+# Importing the Required Libraries
 import pygame
 import math
 import random
 
+# Information for saving the animation frames
+dir_name = "rrt_star_frames"
+frame_number = 0
+
+# Initializing variables defining the world and algorithm
+# Can be varied as per convenience and world/algorithm specifications
 WINDOW_LENGTH = 1000					# Length of the grid world along the X-axis
 WINDOW_BREADTH = 1000					# Length of the grid world along the Y-axis
 NODE_RADIUS = 3							# Radius of the circle displayed for each node
-GOAL_RADIUS = 10						# Radius of goal reachability to ensure the algorithm has finished
+GOAL_RADIUS = 20						# Radius of goal reachability to ensure the algorithm has finished
 EPSILON = 15							# Determines how far to place each node from its parent
-REWIRING_RADIUS = 50   					# Radius to search for nodes to rewire/compare cost
+REWIRING_RADIUS = 30   					# Radius to search for nodes to rewire/compare cost
 
 # Defining different map types (based on obstacles) to perform RRT* on
+# Rectangles: (left,top,width,height)
+# Circles: (centre_x,centre_y,radius)
 OBSTACLES = [{"rectangles":[(300,300,150,600),(700,500,250,100)],"circles":[(850,150,100)]},{"rectangles":[(700,50,50,900)],"circles":[(350,650,200),(900,300,50)]}]
-MAP_TYPE = 0
+MAP_TYPE = 1
 
 # Defining colour values across the RGB Scale
 WHITE = (255,255,255)
@@ -37,14 +49,18 @@ class Node:
 
 	# Colouring a node for visualization processes in pygame
 	def visualize_node(self,viz_window):
+		global frame_number
 		colour = RED
 		if self.start_node or self.target_node:
 			colour = ORANGE
 		pygame.draw.circle(viz_window,colour,(self.x,self.y),NODE_RADIUS,width=0)
 		pygame.display.update()
+		pygame.image.save(viz_window,dir_name+"/frame"+str(frame_number)+".jpg")
+		frame_number += 1
 
 # Initializing obstacles on the map
 def initialize_obstacles(viz_window):
+	global frame_number
 	obstacle_list = {"rectangles":[],"circles":[]}
 	for rect in OBSTACLES[int(MAP_TYPE)]["rectangles"]:
 		obstacle_list["rectangles"].append(pygame.Rect(rect)) 
@@ -53,6 +69,8 @@ def initialize_obstacles(viz_window):
 		obstacle_list["circles"].append(circle)
 		pygame.draw.circle(viz_window,BLACK,(circle[0],circle[1]),circle[2],width=0)
 	pygame.display.update()
+	pygame.image.save(viz_window,dir_name+"/frame"+str(frame_number)+".jpg")
+	frame_number += 1
 	return obstacle_list
 
 # Checking if the new point generated collides with any obstacles in the environment
@@ -94,6 +112,8 @@ def rewire_nodes(new_node,node_list):
 		if dist < REWIRING_RADIUS:
 			if new_node.cost + dist < node.cost:
 				node.cost = new_node.cost + dist
+				if node in node.parent.children:
+					node.parent.children.remove(node)
 				node.parent = new_node
 				update_children(node)
 				new_node.children.append(node)
@@ -131,11 +151,14 @@ def target_reached(node,goal):
 
 # Highliting the final RRT path from starting to target node
 def display_final_path(viz_window,goal_node):
+	global frame_number
 	current_node = goal_node
 	while not current_node.start_node:
 		pygame.draw.line(viz_window,GREEN,(current_node.x,current_node.y),(current_node.parent.x,current_node.parent.y),width=5)
 		current_node = current_node.parent
 	pygame.display.update()
+	pygame.image.save(viz_window,dir_name+"/frame"+str(frame_number)+".jpg")
+	frame_number += 1
 
 # The RRT* Algorithm
 def rrt_algorithm(viz_window,start_node,goal_node,obstacle_list):
