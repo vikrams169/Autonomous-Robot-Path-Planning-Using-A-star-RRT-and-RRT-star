@@ -1,5 +1,5 @@
 # Demonstration and Visualization of the A* Algorithm a 2D Grid World
-# Compatible with Python 3.8.1 and pygame 2.1.2import pygame
+# Compatible with Python 3.8.1 and pygame 2.1.2
 
 # Importing the Required Libraries
 import pygame
